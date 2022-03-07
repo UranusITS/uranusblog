@@ -1,0 +1,45 @@
+title: Uranus Blog
+author: Uranus
+logo_img: img/uranus.svg
+author_img: https://avatars.githubusercontent.com/u/38391284?v=4
+author_description: ''
+
+about:
+  description: 兴趣使然
+  social_links:
+    - { icon: icon-github, link: https://github.com/UranusITS }
+    - { icon: icon-mail, link: mailto:whlisikuang@outlook.com }
+
+links:
+  MasterYin:
+    url: https://ymaster7.github.io/
+    avatar: https://ymaster7.github.io/images/Logo.png
+    description: coder
+
+footer:
+  copyYear: 2022
+
+comment:
+  enable: true
+  type: valine
+  valine:
+    appId: 1zUtdnTlSKAF9e7UpNzR9KNg-gzGzoHsz
+    appKey: CQRcn95xckR6AOcx7OULdcbG
+    placeholder: 欢迎评论
+    path: window.location.pathname
+    avatar: mp
+    meta: ["nick", "mail"]
+    pageSize: 10
+    visitor: false
+    highlight: true
+    recordIP: false
+    serverURLs: https://1zutdntl.lc-cn-n1-shared.com
+    emojiCDN:
+    emojiMaps: null
+    enableQQ: false
+    requiredFields: []
+
+latex:
+  enable: true
+  engine: katex
+  global: true
