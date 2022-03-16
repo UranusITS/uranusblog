@@ -1,3 +1,6 @@
 [submodule "themes/kaze"]
 	path = themes/kaze
 	url = https://github.com/theme-kaze/hexo-theme-kaze
+[submodule "themes/icarus"]
+	path = themes/icarus
+	url = https://github.com/ppoffice/hexo-theme-icarus.git
