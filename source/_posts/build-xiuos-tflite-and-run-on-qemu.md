@@ -2,7 +2,7 @@
 title: 构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行
 categories: IoT
 date: 2022-03-16 20:53:25
-tags:
+tags: 教程
 cover: http://xuos.io/images/hero.svg
 ---
 
