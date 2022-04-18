@@ -25,7 +25,7 @@
     "hexo-renderer-stylus": "^2.0.0",
     "hexo-server": "^3.0.0",
     "hexo-theme-landscape": "^0.0.3",
-    "prismjs": "^1.27.0",
+    "prismjs": "^1.28.0",
     "valine": "^1.4.18"
   }
 }
