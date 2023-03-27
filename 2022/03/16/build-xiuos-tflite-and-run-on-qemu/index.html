@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行 - Uranus Blog</title><link rel="manifest" href="/uranusblog/manifest.json"><meta name="application-name" content="Uranus Blog"><meta name="msapplication-TileImage" content="/img/uranus.svg"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Uranus Blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="前置知识 XiUOS是一款工业物联网操作系统；tf-lite是TensorFlow机器学习开源库的轻量化模型，可以将其神经网络模型部署到非桌面设备上；QEMU是针对物联网系统的虚拟机环境。这篇文章是针对如何构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行的教程。"><meta property="og:type" content="blog"><meta property="og:title" content="构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行"><meta property="og:url" content="https://uranusits.github.io/uranusblog/2022/03/16/build-xiuos-tflite-and-run-on-qemu/"><meta property="og:site_name" content="Uranus Blog"><meta property="og:description" content="前置知识 XiUOS是一款工业物联网操作系统；tf-lite是TensorFlow机器学习开源库的轻量化模型，可以将其神经网络模型部署到非桌面设备上；QEMU是针对物联网系统的虚拟机环境。这篇文章是针对如何构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行的教程。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="http://xuos.io/images/hero.svg"><meta property="article:published_time" content="2022-03-16T12:53:25.000Z"><meta property="article:modified_time" content="2023-03-27T04:14:36.312Z"><meta property="article:author" content="Uranus"><meta property="article:tag" content="教程"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="http://xuos.io/images/hero.svg"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://uranusits.github.io/uranusblog/2022/03/16/build-xiuos-tflite-and-run-on-qemu/"},"headline":"构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行","image":[],"datePublished":"2022-03-16T12:53:25.000Z","dateModified":"2023-03-27T04:14:36.312Z","author":{"@type":"Person","name":"Uranus"},"publisher":{"@type":"Organization","name":"Uranus Blog","logo":{"@type":"ImageObject","url":"https://uranusits.github.io/img/uranus.svg"}},"description":"前置知识 XiUOS是一款工业物联网操作系统；tf-lite是TensorFlow机器学习开源库的轻量化模型，可以将其神经网络模型部署到非桌面设备上；QEMU是针对物联网系统的虚拟机环境。这篇文章是针对如何构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行的教程。"}</script><link rel="canonical" href="https://uranusits.github.io/uranusblog/2022/03/16/build-xiuos-tflite-and-run-on-qemu/"><link rel="icon" href="/uranusblog/img/uranus.svg"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/uranusblog/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cookieconsent@3.1.1/build/cookieconsent.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><!--!--><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!--!--><!--!--><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/uranusblog/"><img src="/uranusblog/img/uranus.svg" alt="Uranus Blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/uranusblog/">首页</a><a class="navbar-item" href="/uranusblog/archives">时间线</a><a class="navbar-item" href="/uranusblog/categories">归类</a><a class="navbar-item" href="/uranusblog/about">关于</a></div><div class="navbar-end"><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><div class="card-image"><span class="image is-7by3"><img class="fill" src="http://xuos.io/images/hero.svg" alt="构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行"></span></div><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2022-03-16T12:53:25.000Z" title="2022/3/16 20:53:25">2022-03-16</time>发表</span><span class="level-item"><time dateTime="2023-03-27T04:14:36.312Z" title="2023/3/27 12:14:36">2023-03-27</time>更新</span><span class="level-item"><a class="link-muted" href="/uranusblog/categories/IoT/">IoT</a></span><span class="level-item">11 分钟读完 (大约1631个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行</h1><div class="content"><h2 id="前置知识"><a class="markdownIt-Anchor" href="#前置知识"></a> 前置知识</h2>
+<p><a target="_blank" rel="noopener" href="http://xuos.io/">XiUOS</a>是一款工业物联网操作系统；<a target="_blank" rel="noopener" href="https://www.tensorflow.org/lite">tf-lite</a>是<a target="_blank" rel="noopener" href="https://www.tensorflow.org/">TensorFlow</a>机器学习开源库的轻量化模型，可以将其神经网络模型部署到非桌面设备上；<a target="_blank" rel="noopener" href="https://www.qemu.org/">QEMU</a>是针对物联网系统的虚拟机环境。这篇文章是针对如何构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行的教程。</p>
+<span id="more"></span>
+<p>教程内使用的机器环境为</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs text">Windows 10 Linux Subsystem<br>BUILD:    22000<br>BRANCH:   co_release<br>RELEASE:  Ubuntu 20.04.4 LTS<br>KERNEL:   Linux 4.4.0-22000-Microsoft<br></code></pre></td></tr></table></figure>
+<p>实际上，这篇教程完全适用于<code>Ubuntu 20.04 LTS</code>和<code>Ubuntu 18.04 LTS</code>，其他操作系统也可以根据命令进行适当修改。选择<a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/windows/wsl/install">WSL</a>也是方便Windows用户完成环境配置，但是虚拟机性能可能会受到影响。</p>
+<p>此外，完成配置还需要至少一款文本编辑器，教程内使用的是<a target="_blank" rel="noopener" href="https://code.visualstudio.com/">VSCode</a>，在这里不赘述其安装过程。读者也可以根据自己的习惯自行选择其他编辑器。</p>
+<p>XiUOS可以在多种单片机环境下构建，这里使用的是<code>arm cortex-m0</code>，这也是tf-lite支持较好的环境，且QEMU在这种环境下的模拟对WSL的支持也较好。</p>
+<blockquote>
+<p>经测试，编译<code>risc-v</code>架构的<code>hifive1</code>环境的XiUOS系统在WSL下的QEMU模拟时会占用CPU 100%并卡死，如果你使用的是WSL环境，请不要选择这一编译方式。</p>
+</blockquote>
+<p>教程会从新安装好的WSL系统开始，到配置完成结束。</p>
+<h2 id="编译环境安装"><a class="markdownIt-Anchor" href="#编译环境安装"></a> 编译环境安装</h2>
+<p>首先需要安装必须的编译环境。在终端内输入</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">sudo apt update<br>sudo apt upgrade<br></code></pre></td></tr></table></figure>
+<p>更新Ubuntu软件包。然后输入</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash">sudo apt install build-essential pkg-config cmake ninja-build git<br>sudo apt install libglib2.0-dev libpixman-1-dev<br>sudo apt install gcc make libncurses5-dev openssl libssl-dev bison flex libelf-dev autoconf libtool gperf libc6-dev<br></code></pre></td></tr></table></figure>
+<p>依次安装C/C++编译环境和git，用于后续XiUOS和QEMU源代码的下载和编译。</p>
+<p>接下来使用终端移动到构建XiUOS系统的文件夹，例如</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-built_in">cd</span> ~<br><span class="hljs-built_in">mkdir</span> testspace/XiUOS<br><span class="hljs-built_in">cd</span> testspace/XiUOS<br></code></pre></td></tr></table></figure>
+<p>然后下载安装裁减配置工具<a target="_blank" rel="noopener" href="https://www.gitlink.org.cn/projects/xuos/kconfig-frontends">kconfig-frontends</a>并安装ARM架构的编译工具链，使用以下命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs bash">git <span class="hljs-built_in">clone</span> https://git.trustie.net/xuos/kconfig-frontends.git<br><span class="hljs-built_in">cd</span> kconfig-frontends<br>./xs_build.sh<br><span class="hljs-built_in">cd</span> ..<br>sudo apt install gcc-arm-none-eabi<br></code></pre></td></tr></table></figure>
+<p>这样就完成了编译环境的安装。</p>
+<h2 id="下载编译qemu"><a class="markdownIt-Anchor" href="#下载编译qemu"></a> 下载编译QEMU</h2>
+<blockquote>
+<p>参考文档<a target="_blank" rel="noopener" href="https://www.qemu.org/download/">Download QEMU</a>。</p>
+</blockquote>
+<p>根据文档，从gitlab仓库中下载并编译QEMU，使用以下命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs bash">git <span class="hljs-built_in">clone</span> https://gitlab.com/qemu-project/qemu.git<br><span class="hljs-built_in">cd</span> qemu<br>git submodule init<br>git submodule update --recursive<br>./configure<br>make<br>sudo make install<br><span class="hljs-built_in">cd</span> ..<br></code></pre></td></tr></table></figure>
+<p>其中<code>./configure</code>命令是配置了整个QEMU包，可能会导致安装过程较长。可以参考<a target="_blank" rel="noopener" href="https://xyzzpwn.top/2020/09/10/ubuntu-bian-yi-an-zhuang-qemu/">相关博客</a>中配置<code>./configure --target-list=XXX</code>的方法编译部分需要的内容。</p>
+<p>安装完成后，就可以使用<code>qemu-system-XXX</code>的命令运行各种架构的虚拟机。例如可以使用<code>qemu-system-aarch64</code>运行arm64架构的虚拟机。</p>
+<h2 id="下载编译xiuos"><a class="markdownIt-Anchor" href="#下载编译xiuos"></a> 下载编译XiUOS</h2>
+<blockquote>
+<p>参考文档<a target="_blank" rel="noopener" href="http://xuos.io/doc/appdev/start_from_scratch/stm32f407-st-discovery.html">从零开始构建矽璓工业物联操作系统：使用ARM架构的STM32F407-discovery开发板</a>。</p>
+</blockquote>
+<p>下载git仓库中的XiUOS源码，并用VSCode打开</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash">git <span class="hljs-built_in">clone</span> https://git.trustie.net/xuos/xiuos.git<br><span class="hljs-built_in">cd</span> xiuos<br>code .<br></code></pre></td></tr></table></figure>
+<p>打开的源码将在下一章中进行讲解，现在先来尝试编译源码中提供的<code>Hello World</code>样例。</p>
+<blockquote>
+<p>本篇教程写作于<code>commit 3a35bee743</code>版本，该版本存在一个很大的漏洞，需要先进行修理，后续版本也可能对此进行维护，因此接下来一段代码修改请读者依照所处的编译环境自行选择。修改方法参考<a target="_blank" rel="noopener" href="https://gitlink.org.cn/xuos/xiuos/issues/52079">这个issue</a>。</p>
+</blockquote>
+<p>接下来配置XiUOS</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-built_in">cd</span> Ubiquitous/XiUOS/<br>make BOARD=cortex-m0-emulator menuconfig<br></code></pre></td></tr></table></figure>
+<p>运行成功将会进入如下配置界面：</p>
+<p><img src="https://z4a.net/images/2022/03/16/menuconfig.png" alt="menuconfig" /></p>
+<p>如界面介绍，界面的操作方法是按上下左右移动光标，<code>Y</code>表示开启功能，<code>N</code>表示关闭功能，<code>M</code>表示修改功能。XiUOS系统中内置了tf-lite库，需要在这里配置开启。具体位置在</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs text">menuconfig<br>---&gt;APP_Framework<br>---&gt;Framework<br>---&gt;support knowing framework<br>---&gt;Tensorflow Lite for Micro<br>---&gt;Using tensorflow lite for micro demo app<br></code></pre></td></tr></table></figure>
+<p>其他的配置项可以根据自己的需要进行添加。配置完成后将光标移到下方的<code>Save</code>按钮保存后到<code>Exit</code>按钮退出。</p>
+<p>接下来就可以开始编译</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">make BOARD=cortex-m0-emulator<br></code></pre></td></tr></table></figure>
+<p>编译完成后应该可以看到类似下文的提示</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs text">------------------------------------------------<br>link XiUOS_cortex-m0-emulator.elf<br>------------------------------------------------<br>   text    data     bss     dec     hex filename<br>  90604    1812    2728   95144   173a8 XiUOS_cortex-m0-emulator.elf<br></code></pre></td></tr></table></figure>
+<p>说明了编译生成的文件名为<code>XiUOS_cortex-m0-emulator.elf</code>，存放路径为当前目录下的<code>build</code>文件夹。尝试使用前文编译的QEMU虚拟机运行</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">qemu-system-arm -machine microbit -nographic -kernel build/XiUOS_cortex-m0-emulator.elf<br></code></pre></td></tr></table></figure>
+<p>如果出现了</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs text"> _         _   _                  _          _ _<br>| |    ___| |_| |_ ___ _ __   ___| |__   ___| | |<br>| |   / _ \ __| __/ _ \ &#x27;__| / __| &#x27;_ \ / _ \ | |<br>| |__|  __/ |_| ||  __/ |    \__ \ | | |  __/ | |<br>|_____\___|\__|\__\___|_|    |___/_| |_|\___|_|_|<br><br>Build:       Mar 16 2022 17:33:52<br>Version:     3.0.5<br>Copyright:   (c) 2020 Letter<br><br>letter:$ Hello, world!<br></code></pre></td></tr></table></figure>
+<p>的提示，说明编译运行正常了。使用快捷键<code>ctrl-A</code>后按下<code>X</code>即可退出QEMU虚拟机。</p>
+<h2 id="xiuos源码逻辑简述"><a class="markdownIt-Anchor" href="#xiuos源码逻辑简述"></a> XiUOS源码逻辑简述</h2>
+<p>XiUOS文件目录为</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs text">xiuos<br>├── APP_Framework<br>│   ├── Applications<br>│   ├── Framework<br>│   ├── Kconfig<br>│   ├── Make.defs<br>│   ├── Makefile<br>│   └── lib<br>├── Ubiquitous<br>│   ├── Nuttx<br>│   ├── RT_Thread<br>│   └── XiUOS<br>└── readme.md<br></code></pre></td></tr></table></figure>
+<p><code>Ubiquitous</code>文件夹内存放的是操作系统的源码，因此我们前文的编译在<code>xiuos/Ubiquitous/XiUOS/</code>目录下进行。<code>APP_Framework</code>文件夹内存放的是在XiUOS系统中运行的程序代码，内涵的<code>Framework</code>文件夹存放的是程序运行的各种依赖，<code>Applications</code>文件夹存放的是应用程序，特别是<code>xiuos/APP_Framework/Applications/main.c</code>文件，是程序运行的入口。而<code>xiuos/APP_Framework/Framework/knowing/tensorflow-lite/tensorflow-lite-for-mcu</code>文件夹内则是存放有tf-lite的代码。因此在XiUOS内进行软件开发主要是修改作为入口的<code>main.c</code>文件实现需要的功能。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行</p><p><a href="https://uranusits.github.io/uranusblog/2022/03/16/build-xiuos-tflite-and-run-on-qemu/">https://uranusits.github.io/uranusblog/2022/03/16/build-xiuos-tflite-and-run-on-qemu/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Uranus</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2022-03-16</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2023-03-27</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a><a class="icons" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="icon fab fa-creative-commons-by"></i></a><a class="icons" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="icon fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/uranusblog/tags/%E6%95%99%E7%A8%8B/">教程</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/uranusblog/2022/04/04/reflections-on-dm37-graduation/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">DM37毕业随想</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/uranusblog/2022/03/07/hello-world/"><span class="level-item">Hello World</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div class="content" id="valine-thread"></div><script src="//cdn.jsdelivr.net/npm/leancloud-storage@3/dist/av-min.js"></script><script src="https://cdn.jsdelivr.net/npm/valine@1.4.16/dist/Valine.min.js"></script><script>new Valine({
+            el: '#valine-thread',
+            appId: "1zUtdnTlSKAF9e7UpNzR9KNg-gzGzoHsz",
+            appKey: "CQRcn95xckR6AOcx7OULdcbG",
+            
+            avatar: "mm",
+            avatarForce: false,
+            meta: ["nick","mail"],
+            pageSize: 10,
+            lang: "zh-CN",
+            visitor: false,
+            highlight: true,
+            recordIP: false,
+            
+            
+            
+            enableQQ: false,
+            requiredFields: [],
+        });</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1 is-sticky"><div class="card widget" data-type="profile"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar is-rounded" src="https://avatars.githubusercontent.com/u/38391284" alt="Uranus"></figure><p class="title is-size-4 is-block" style="line-height:inherit;">Uranus</p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">文章</p><a href="/uranusblog/archives"><p class="title">3</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">分类</p><a href="/uranusblog/categories"><p class="title">3</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">标签</p><a href="/uranusblog/tags"><p class="title">2</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/UranusITS" target="_blank" rel="noopener">关注我</a></div></div></div><div class="card widget" data-type="links"><div class="card-content"><div class="menu"><h3 class="menu-label">链接</h3><ul class="menu-list"><li><a class="level is-mobile" href="https://ymaster7.github.io/" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">MasterYin</span></span><span class="level-right"><span class="level-item tag">ymaster7.github.io</span></span></a></li></ul></div></div></div><div class="card widget" data-type="recent-posts"><div class="card-content"><h3 class="menu-label">最新文章</h3><article class="media"><div class="media-content"><p class="date"><time dateTime="2022-04-03T17:52:26.000Z">2022-04-04</time></p><p class="title"><a href="/uranusblog/2022/04/04/reflections-on-dm37-graduation/">DM37毕业随想</a></p><p class="categories"><a href="/uranusblog/categories/music/">music</a></p></div></article><article class="media"><div class="media-content"><p class="date"><time dateTime="2022-03-16T12:53:25.000Z">2022-03-16</time></p><p class="title"><a href="/uranusblog/2022/03/16/build-xiuos-tflite-and-run-on-qemu/">构建支持tf-lite的XiUOS系统并在QEMU虚拟机上运行</a></p><p class="categories"><a href="/uranusblog/categories/IoT/">IoT</a></p></div></article><article class="media"><div class="media-content"><p class="date"><time dateTime="2022-03-07T08:50:00.000Z">2022-03-07</time></p><p class="title"><a href="/uranusblog/2022/03/07/hello-world/">Hello World</a></p><p class="categories"><a href="/uranusblog/categories/site/">site</a></p></div></article></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/uranusblog/"><img src="/uranusblog/img/uranus.svg" alt="Uranus Blog" height="28"></a><p class="is-size-7"><span>&copy; 2023 Uranus</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/uranusblog/js/column.js"></script><script src="/uranusblog/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/uranusblog/js/back_to_top.js" defer></script><!--!--><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/cookieconsent@3.1.1/build/cookieconsent.min.js" defer></script><script>window.addEventListener("load", () => {
+      window.cookieconsent.initialise({
+        type: "info",
+        theme: "edgeless",
+        static: false,
+        position: "bottom-left",
+        content: {
+          message: "此网站使用Cookie来改善您的体验。",
+          dismiss: "知道了！",
+          allow: "允许使用Cookie",
+          deny: "拒绝",
+          link: "了解更多",
+          policy: "Cookie政策",
+          href: "https://www.cookiesandyou.com/",
+        },
+        palette: {
+          popup: {
+            background: "#edeff5",
+            text: "#838391"
+          },
+          button: {
+            background: "#4b81e8"
+          },
+        },
+      });
+    });</script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css"><script src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/mhchem.min.js" defer></script><script>window.addEventListener("load", function() {
+            document.querySelectorAll('[role="article"] > .content').forEach(function(element) {
+                renderMathInElement(element);
+            });
+        });</script><!--!--><!--!--><!--!--><script src="/uranusblog/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/uranusblog/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/uranusblog/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>
